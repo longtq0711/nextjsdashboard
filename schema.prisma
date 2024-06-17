@@ -1,0 +1,128 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String             @id @default(uuid())
+  name                String
+  email               String             @unique
+  personalEmail       String             @unique
+  employeeNumber      String             @unique
+  phoneNumber         String             @unique
+  personalPhoneNumber String             @unique
+  defaultWorkSpace    WorkSpace          @relation(fields: [workSpaceId], references: [id])
+  workStatus          WorkStatus         @relation(fields: [workStatusId], references: [id])
+  comment             UserComment        @relation(fields: [commentId], references: [id])
+  avatar              String
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  UsersInDivisions    UsersInDivisions[]
+  newsFavorites       News[]             @relation("UsersFavoriteNews")
+  newsRead            News[]             @relation("UsersReadNews")
+  News                News[]
+  followedBy          UserFollows[]      @relation("followedBy")
+  following           UserFollows[]      @relation("following")
+  workStatusId        Int
+  commentId           Int                @unique
+  workSpaceId         Int
+}
+
+model UserFollows {
+  followedBy   User     @relation("followedBy", fields: [followedById], references: [id])
+  followedById String
+  following    User     @relation("following", fields: [followingId], references: [id])
+  followingId  String
+  order        Int      @default(autoincrement())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@id([followingId, followedById])
+}
+
+model WorkStatus {
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  users     User[]
+}
+
+model UserComment {
+  id          Int      @id @default(autoincrement())
+  content     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  commentedBy User?
+}
+
+model WorkSpace {
+  id        Int      @id @default(autoincrement())
+  location  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Users     User[]
+}
+
+model Division {
+  id               Int                @id @default(autoincrement())
+  name             String
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  parentId         Int?
+  parent           Division?          @relation("ChildDivision", fields: [parentId], references: [id])
+  children         Division[]         @relation("ChildDivision")
+  UsersInDivisions UsersInDivisions[]
+}
+
+model UsersInDivisions {
+  division        Division       @relation(fields: [divisionId], references: [id])
+  divisionId      Int
+  user            User           @relation(fields: [userId], references: [id])
+  userId          String
+  userPosition    UserPositions? @relation(fields: [userPositionsId], references: [id])
+  userPositionsId Int?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@id([userId, divisionId])
+}
+
+model UserPositions {
+  id               Int                @id @default(autoincrement())
+  title            String
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  UsersInDivisions UsersInDivisions[]
+}
+
+model News {
+  id          Int            @id @default(autoincrement())
+  title       String
+  content     String
+  author      User           @relation(fields: [authorId], references: [id])
+  authorId    String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  type        NewsCategory[]
+  favoritedBy User[]         @relation("UsersFavoriteNews")
+  readBy      User[]         @relation("UsersReadNews")
+}
+
+model NewsCategory {
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  News      News[]
+}
